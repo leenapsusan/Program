@@ -1,49 +1,51 @@
 import csv
-from datetime import datetime, time
+from datetime import datetime, timedelta
+
+class Timecard:
+    def __init__(self, position_id, position_status, time_in, time_out,
+                 timecard_hours, pay_cycle_start_date, pay_cycle_end_date,
+                 employee_name, file_number):
+        self.position_id = position_id
+        self.position_status = position_status
+        self.time_in = time_in
+        self.time_out = time_out
+        self.timecard_hours = timecard_hours
+        self.pay_cycle_start_date = pay_cycle_start_date
+        self.pay_cycle_end_date = pay_cycle_end_date
+        self.employee_name = employee_name
+        self.file_number = file_number
 
 def parse_date(date_str):
-    return datetime.strptime(date_str, "%Y-%m-%d")
+    return datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
 
-def analyze_work_hours(file_path):
-    # Dictionary to store employee data
-    employees = {}
+def analyze_timecards(file_path):
+    timecards = []
 
     with open(file_path, 'r') as file:
-        # Assume CSV file with columns: Employee Name, Position, Date, Hours Worked
+        # Assume CSV file with columns: Position ID, Position Status, Time In, Time Out,
+        # Timecard Hours (as Time), Pay Cycle Start Date, Pay Cycle End Date,
+        # Employee Name, File Number
         csv_reader = csv.reader(file)
         next(csv_reader)  # Skip header
 
         for row in csv_reader:
-            employee_name, position, date_str, hours_worked_str = row
-            date = parse_date(date_str)
-            hours_worked = float(hours_worked_str)
+            position_id, position_status, time_in_str, time_out_str, \
+            timecard_hours_str, pay_cycle_start_date_str, pay_cycle_end_date_str, \
+            employee_name, file_number = map(str.strip, row)
 
-            # Initialize employee if not in the dictionary
-            if employee_name not in employees:
-                employees[employee_name] = {'position': position, 'shifts': []}
+            time_in = parse_date(time_in_str)
+            time_out = parse_date(time_out_str)
+            timecard_hours = float(timecard_hours_str)
+            pay_cycle_start_date = parse_date(pay_cycle_start_date_str)
+            pay_cycle_end_date = parse_date(pay_cycle_end_date_str)
 
-            # Add shift information
-            employees[employee_name]['shifts'].append({'date': date, 'hours_worked': hours_worked})
+            timecards.append(Timecard(position_id, position_status, time_in, time_out,
+                                       timecard_hours, pay_cycle_start_date, pay_cycle_end_date,
+                                       employee_name, file_number))
 
-    # Analyze and print results
-    for employee_name, data in employees.items():
-        shifts = data['shifts']
-
-        # Check for 7 consecutive days
-        for i in range(len(shifts) - 6):
-            if (shifts[i + 6]['date'] - shifts[i]['date']).days == 6:
-                print(f"{employee_name} has worked for 7 consecutive days.")
-
-        # Check for less than 10 hours between shifts but greater than 1 hour
-        for i in range(len(shifts) - 1):
-            time_between_shifts = shifts[i + 1]['date'] - (shifts[i]['date'] + time(hours=shifts[i]['hours_worked']))
-            if 1 < time_between_shifts.total_seconds() // 3600 < 10:
-                print(f"{employee_name} has less than 10 hours between shifts but greater than 1 hour.")
-
-        # Check for more than 14 hours in a single shift
-        for shift in shifts:
-            if shift['hours_worked'] > 14:
-                print(f"{employee_name} has worked for more than 14 hours in a single shift.")
+    for timecard in timecards:
+        # Your analysis code here
+        pass
 
 if __name__ == "__main__":
-    analyze_work_hours('hours.csv')
+    analyze_timecards('timecards.csv')
