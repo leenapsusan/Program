@@ -1,0 +1,49 @@
+import csv
+from datetime import datetime, time
+
+def parse_date(date_str):
+    return datetime.strptime(date_str, "%Y-%m-%d")
+
+def analyze_work_hours(file_path):
+    # Dictionary to store employee data
+    employees = {}
+
+    with open(file_path, 'r') as file:
+        # Assume CSV file with columns: Employee Name, Position, Date, Hours Worked
+        csv_reader = csv.reader(file)
+        next(csv_reader)  # Skip header
+
+        for row in csv_reader:
+            employee_name, position, date_str, hours_worked_str = row
+            date = parse_date(date_str)
+            hours_worked = float(hours_worked_str)
+
+            # Initialize employee if not in the dictionary
+            if employee_name not in employees:
+                employees[employee_name] = {'position': position, 'shifts': []}
+
+            # Add shift information
+            employees[employee_name]['shifts'].append({'date': date, 'hours_worked': hours_worked})
+
+    # Analyze and print results
+    for employee_name, data in employees.items():
+        shifts = data['shifts']
+
+        # Check for 7 consecutive days
+        for i in range(len(shifts) - 6):
+            if (shifts[i + 6]['date'] - shifts[i]['date']).days == 6:
+                print(f"{employee_name} has worked for 7 consecutive days.")
+
+        # Check for less than 10 hours between shifts but greater than 1 hour
+        for i in range(len(shifts) - 1):
+            time_between_shifts = shifts[i + 1]['date'] - (shifts[i]['date'] + time(hours=shifts[i]['hours_worked']))
+            if 1 < time_between_shifts.total_seconds() // 3600 < 10:
+                print(f"{employee_name} has less than 10 hours between shifts but greater than 1 hour.")
+
+        # Check for more than 14 hours in a single shift
+        for shift in shifts:
+            if shift['hours_worked'] > 14:
+                print(f"{employee_name} has worked for more than 14 hours in a single shift.")
+
+if __name__ == "__main__":
+    analyze_work_hours('hours.csv')
